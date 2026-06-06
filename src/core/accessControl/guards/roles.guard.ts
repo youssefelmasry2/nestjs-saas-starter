@@ -14,8 +14,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // Populated by JwtAuthGuard
-    console.log('user in RolesGuard', user);
+    const user = request.user;
 
     if (!user || !requiredRoles.includes(user.role)) {
       throw new ForbiddenException('You do not have the required role to access this resource');

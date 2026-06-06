@@ -23,8 +23,8 @@ async function bootstrap() {
   
   // Configure Swagger
   const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('API endpoints Katina')
+    .setTitle('SaaS API')
+    .setDescription('Multi-tenant SaaS starter API with subscription plans')
     .setVersion('1.0')
 .addBearerAuth(
   { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },

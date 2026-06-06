@@ -35,7 +35,7 @@ export class UsersController {
   // ================= CREATE =================
   @Post()
   @AccessAuth()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Create user' })
   create(
     @Body() createUserDto: CreateUserDto,
@@ -46,7 +46,7 @@ export class UsersController {
   // ================= GET ALL =================
   @Get()
   @AccessAuth()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Get all users will be removed ' })
   findAll() {
     return this.usersService.findAll();
@@ -55,7 +55,7 @@ export class UsersController {
   // ================= GET ONE =================
   @Get(':id')
   @AccessAuth()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Get user by id' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -64,7 +64,7 @@ export class UsersController {
   // ================= UPDATE =================
   @Patch(':id')
   @AccessAuth()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   @ApiOperation({ summary: 'Update user' })
   update(
     @Param('id') id: string,
@@ -79,7 +79,7 @@ export class UsersController {
   // ================= DELETE =================
   @Delete(':id')
   @AccessAuth()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

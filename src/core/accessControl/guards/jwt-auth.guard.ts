@@ -42,7 +42,6 @@ export class JwtAuthGuard implements CanActivate {
       // default = access
       const payload = this.tokenService.validateAccessToken(token);
       request.user = payload;
-      console.log('payload', payload);
       return true;
 
     } catch {

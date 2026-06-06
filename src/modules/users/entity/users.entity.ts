@@ -10,16 +10,15 @@ import {
 } from 'typeorm';
 import { uuidv7 } from 'uuidv7';
 import { Token } from '../../../core/accessControl/token/entity/tokens.entity';
+import { TenantMember } from '../../tenants/entities/tenant-member.entity';
 
-// ==================== USERS ====================
 export enum UserRole {
   USER = 'user',
-  ADMIN = 'admin'
+  PLATFORM_ADMIN = 'platform_admin',
 }
 
-
 @Entity('users')
-@Index(['phone'], { unique: true })
+@Index(['email'], { unique: true })
 export class User {
   @PrimaryColumn('uuid')
   id: string;
@@ -29,21 +28,18 @@ export class User {
     this.id = uuidv7();
   }
 
+  @Column({ unique: true })
+  email: string;
 
-  @Column({ unique: true})
-  phone: string;
-
- 
   @Column({ name: 'full_name' })
   fullName: string;
 
-  @Column({ name: 'password_hash' , select: false })
+  @Column({ name: 'password_hash', select: false })
   passwordHash: string;
 
   @Column({ enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  
   @Column({ name: 'profile_image_url', nullable: true })
   profileImageUrl: string;
 
@@ -52,11 +48,6 @@ export class User {
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
-
-
-
-  @Column({ type: 'decimal', precision: 3, scale: 2, default: 5.0 })
-  rating: number;
 
   @Column({ name: 'last_login_at', type: 'timestamp', nullable: true })
   lastLoginAt: Date;
@@ -67,25 +58,9 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // // Relations
-
   @OneToMany(() => Token, (token) => token.user)
   tokens: Token[];
-  // @OneToMany(() => Vehicle, (vehicle) => vehicle.owner)
-  // vehicles: Vehicle[];
 
-  // @OneToMany(() => PartRequest, (request) => request.carOwner)
-  // partRequests: PartRequest[];
-
-  // @OneToMany(() => Order, (order) => order.carOwner)
-  // ordersAsCarOwner: Order[];
-
-  // @OneToMany(() => Review, (review) => review.reviewer)
-  // givenReviews: Review[];
-
-  // @OneToMany(() => Review, (review) => review.reviewee)
-  // receivedReviews: Review[];
-
-  // @OneToMany(() => Notification, (notification) => notification.user)
-  // notifications: Notification[];
+  @OneToMany(() => TenantMember, (member) => member.user)
+  tenantMemberships: TenantMember[];
 }

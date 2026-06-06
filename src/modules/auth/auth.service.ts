@@ -1,20 +1,61 @@
 import {
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { TokenService } from '../../core/accessControl/token/token.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { TenantsService } from '../tenants/tenants.service';
+import { LoginDto, RegisterDto, SwitchTenantDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly tokenService: TokenService,
     private readonly usersService: UsersService,
+    private readonly tenantsService: TenantsService,
   ) {}
 
+  private async buildAuthResponse(
+    user: { id: string; role: string },
+    tenantId?: string,
+  ) {
+    let tenantRole: string | undefined;
+
+    if (tenantId) {
+      const membership = await this.tenantsService.getMembership(
+        user.id,
+        tenantId,
+      );
+      if (!membership) {
+        throw new ForbiddenException('You do not have access to this tenant');
+      }
+      tenantRole = membership.role;
+    }
+
+    const accessToken = this.tokenService.generateAccessToken(
+      user,
+      tenantId,
+      tenantRole,
+    );
+    const refreshToken = await this.tokenService.generateRefreshToken(
+      user,
+      tenantId,
+      tenantRole,
+    );
+
+    const tenants = await this.tenantsService.findUserTenants(user.id);
+
+    return {
+      accessToken,
+      refreshToken,
+      currentTenantId: tenantId ?? null,
+      tenants,
+    };
+  }
+
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByPhone(dto.phone);
+    const user = await this.usersService.findByEmail(dto.email);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -29,61 +70,60 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken =
-      this.tokenService.generateAccessToken(user);
+    await this.usersService.updateLastLogin(user.id);
+    delete user.passwordHash;
 
-    const refreshToken =
-      await this.tokenService.generateRefreshToken(user);
+    const tenants = await this.tenantsService.findUserTenants(user.id);
+    const defaultTenantId = tenants[0]?.id;
 
-      await this.usersService.updateLastLogin(user.id);
+    const tokens = await this.buildAuthResponse(user, defaultTenantId);
 
-      delete user.passwordHash;
-
-    return {
-      user,
-      accessToken,
-      refreshToken,
-    };
+    return { user, ...tokens };
   }
 
-  async register(dto: any) {
-    const user = await this.usersService.create(dto);
+  async register(dto: RegisterDto) {
+    const user = await this.usersService.create({
+      email: dto.email,
+      fullName: dto.fullName,
+      password: dto.password,
+      profileImageUrl: dto.profileImageUrl,
+    });
 
-    const accessToken = this.tokenService.generateAccessToken(user);
+    const tenant = await this.tenantsService.createWithOwner(
+      user.id,
+      dto.organizationName,
+    );
 
-    const refreshToken = await this.tokenService.generateRefreshToken(user);
+    const tokens = await this.buildAuthResponse(user, tenant.id);
 
-    return {
-      user,
-      accessToken,
-      refreshToken,
-    };
-}
-
-async logout(refreshToken: string) {
-  const payload = await this.tokenService.validateRefreshToken(refreshToken);
-
-  const sessionId = payload.sessionId;
-
-    await this.tokenService.revokeSession(sessionId);
-
-  return { success: true };
-}
-
-async refreshToken(refreshToken: string) {
-  const newTokens = await this.tokenService.rotateRefreshToken(refreshToken);
-
-  if (!newTokens) {
-    throw new UnauthorizedException('Invalid refresh token');
+    return { user, tenant, ...tokens };
   }
 
-  return newTokens;
-}
+  async switchTenant(userId: string, dto: SwitchTenantDto) {
+    const user = await this.usersService.findOne(userId);
+    return this.buildAuthResponse(user, dto.tenantId);
+  }
+
+  async logout(refreshToken: string) {
+    const payload = await this.tokenService.validateRefreshToken(refreshToken);
+    await this.tokenService.revokeSession(payload.sessionId);
+    return { success: true };
+  }
+
+  async refreshToken(refreshToken: string) {
+    const newTokens = await this.tokenService.rotateRefreshToken(refreshToken);
+    if (!newTokens) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    return newTokens;
+  }
+
   async getProfile(userId: string) {
     const user = await this.usersService.findOne(userId);
-
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return user;
-}}
+    const tenants = await this.tenantsService.findUserTenants(userId);
+    return { ...user, tenants };
+  }
+}

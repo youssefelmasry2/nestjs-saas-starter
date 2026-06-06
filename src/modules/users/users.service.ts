@@ -6,7 +6,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-
 import { User } from './entity/users.entity';
 import { CreateUserDto } from './dto/users.dto';
 import { UpdateUserDto } from './dto/users.dto';
@@ -18,62 +17,49 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
   ) {}
 
-  // ================= CREATE USER =================
   async create(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.usersRepository.findOne({
-      where: {
-        phone: createUserDto.phone,
-      },
+      where: { email: createUserDto.email },
     });
 
     if (existingUser) {
-      throw new ConflictException('Phone number already exists');
+      throw new ConflictException('Email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
-      10,
-    );
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     const user = this.usersRepository.create({
-      ...createUserDto,
+      email: createUserDto.email,
+      fullName: createUserDto.fullName,
       passwordHash: hashedPassword,
+      profileImageUrl: createUserDto.profileImageUrl,
+      role: createUserDto.role,
+      isVerified: createUserDto.isVerified ?? false,
     });
-
-    delete (user as any).password;
 
     return await this.usersRepository.save(user);
   }
 
-  // ================= FIND ALL =================
   async findAll(): Promise<User[]> {
     return await this.usersRepository.find({
-      order: {
-        createdAt: 'DESC',
-      },
+      order: { createdAt: 'DESC' },
     });
   }
 
-  // ================= FIND ONE =================
   async findOne(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-    });
-
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     return user;
   }
 
-  // ================= FIND BY PHONE =================
-  async findByPhone(phone: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<User | null> {
     return await this.usersRepository.findOne({
-      where: { phone },
+      where: { email },
       select: [
         'id',
-        'phone',
+        'email',
         'profileImageUrl',
         'fullName',
         'passwordHash',
@@ -84,39 +70,25 @@ export class UsersService {
     });
   }
 
-  // ================= UPDATE USER =================
-  async update(
-    id: string,
-    updateUserDto: UpdateUserDto,
-  ): Promise<User> {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
-
     Object.assign(user, updateUserDto);
-
     return await this.usersRepository.save(user);
   }
 
   async updateLastLogin(id: string): Promise<void> {
-    await this.usersRepository.update(id, {
-      lastLoginAt: new Date(),
-    });
+    await this.usersRepository.update(id, { lastLoginAt: new Date() });
   }
 
-  // ================= DELETE USER =================
   async remove(id: string): Promise<void> {
     const user = await this.findOne(id);
-
     await this.usersRepository.remove(user);
   }
 
-  // ================= VALIDATE PASSWORD =================
   async validatePassword(
     plainPassword: string,
     hashedPassword: string,
   ): Promise<boolean> {
-    return await bcrypt.compare(
-      plainPassword,
-      hashedPassword,
-    );
+    return await bcrypt.compare(plainPassword, hashedPassword);
   }
 }
