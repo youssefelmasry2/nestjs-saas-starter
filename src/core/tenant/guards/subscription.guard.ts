@@ -3,10 +3,11 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { REQUIRES_SUBSCRIPTION_KEY } from '../decorators/tenant.decorator';
-import { SubscriptionsService } from '../../../modules/subscriptions/subscriptions.service';
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { REQUIRES_SUBSCRIPTION_KEY } from "../decorators/tenant.decorator";
+import { SubscriptionsService } from "../../../modules/subscriptions/subscriptions.service";
+import type { AuthenticatedRequest } from "../../types/authenticated-request.type";
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
@@ -21,13 +22,15 @@ export class SubscriptionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiresSubscription) return true;
+    if (!requiresSubscription) {
+      return true;
+    }
 
-    const request = context.switchToHttp().getRequest();
-    const tenantId = request.tenant?.id ?? request.user?.tenantId;
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const tenantId = request.tenant?.id ?? request.user.tenantId;
 
     if (!tenantId) {
-      throw new ForbiddenException('Tenant context required');
+      throw new ForbiddenException("Tenant context required");
     }
 
     const subscription =
@@ -35,7 +38,7 @@ export class SubscriptionGuard implements CanActivate {
 
     if (!subscription) {
       throw new ForbiddenException(
-        'An active subscription is required for this action',
+        "An active subscription is required for this action",
       );
     }
 

@@ -1,17 +1,16 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsEmail,
   IsEnum,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
   MinLength,
-} from 'class-validator';
-import { TenantMemberRole } from '../entities/tenant-member.entity';
+} from "class-validator";
+import { TenantMemberRole } from "../entities/tenant-member.entity";
 
 export class CreateTenantDto {
-  @ApiProperty({ example: 'Acme Corp' })
+  @ApiProperty({ example: "Acme Corp" })
   @IsString()
   @MinLength(2)
   @MaxLength(100)
@@ -19,7 +18,7 @@ export class CreateTenantDto {
 }
 
 export class UpdateTenantDto {
-  @ApiPropertyOptional({ example: 'Acme Corp' })
+  @ApiPropertyOptional({ example: "Acme Corp" })
   @IsOptional()
   @IsString()
   @MinLength(2)
@@ -28,11 +27,14 @@ export class UpdateTenantDto {
 }
 
 export class InviteMemberDto {
-  @ApiProperty({ example: 'member@example.com' })
+  @ApiProperty({ example: "member@example.com" })
   @IsEmail()
   email: string;
 
-  @ApiPropertyOptional({ enum: TenantMemberRole, default: TenantMemberRole.MEMBER })
+  @ApiPropertyOptional({
+    enum: TenantMemberRole,
+    default: TenantMemberRole.MEMBER,
+  })
   @IsOptional()
   @IsEnum(TenantMemberRole)
   role?: TenantMemberRole;

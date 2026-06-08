@@ -1,43 +1,57 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import helmet from "helmet";
+import { AppModule } from "./app.module";
+import { isDevelopment } from "./config/env";
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-    // Enable CORS
-    app.enableCors({
-      origin: process.env.CLIENT_URL, // Allow requests from your frontend
-      credentials: true, // Allow cookies and credentials
-    });
-    app.useGlobalPipes(
-  new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }),
-);
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
 
-     app.setGlobalPrefix('api/v1');
+  app.enableShutdownHooks();
+  app.use(helmet());
 
-  
-  // Configure Swagger
-  const config = new DocumentBuilder()
-    .setTitle('SaaS API')
-    .setDescription('Multi-tenant SaaS starter API with subscription plans')
-    .setVersion('1.0')
-.addBearerAuth(
-  { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-  'access-token',
-)
-.addBearerAuth(
-  { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-  'refresh-token',
-)
-    .build();
+  app.enableCors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  });
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
-  await app.listen(process.env.PORT ?? 3000);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  app.setGlobalPrefix("api/v1", { exclude: ["health"] });
+
+  if (isDevelopment()) {
+    const config = new DocumentBuilder()
+      .setTitle("SaaS API")
+      .setDescription("Multi-tenant SaaS starter API with subscription plans")
+      .setVersion("1.0")
+      .addBearerAuth(
+        { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+        "access-token",
+      )
+      .addBearerAuth(
+        { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+        "refresh-token",
+      )
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup("docs", app, document);
+  }
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
 }
-bootstrap();
+
+bootstrap().catch((error: unknown) => {
+  console.error("Failed to start application", error);
+  process.exit(1);
+});

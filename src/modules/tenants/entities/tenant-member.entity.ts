@@ -8,21 +8,21 @@ import {
   Index,
   ManyToOne,
   JoinColumn,
-} from 'typeorm';
-import { uuidv7 } from 'uuidv7';
-import { User } from '../../users/entity/users.entity';
-import { Tenant } from './tenant.entity';
+} from "typeorm";
+import { uuidv7 } from "uuidv7";
+import { User } from "../../users/entity/users.entity";
+import { Tenant } from "./tenant.entity";
 
 export enum TenantMemberRole {
-  OWNER = 'owner',
-  ADMIN = 'admin',
-  MEMBER = 'member',
+  OWNER = "owner",
+  ADMIN = "admin",
+  MEMBER = "member",
 }
 
-@Entity('tenant_members')
-@Index(['tenantId', 'userId'], { unique: true })
+@Entity("tenant_members")
+@Index(["tenantId", "userId"], { unique: true })
 export class TenantMember {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn("uuid")
   id: string;
 
   @BeforeInsert()
@@ -30,26 +30,32 @@ export class TenantMember {
     this.id = uuidv7();
   }
 
-  @Column({ name: 'tenant_id' })
+  @Column({ name: "tenant_id" })
   tenantId: string;
 
-  @ManyToOne(() => Tenant, (tenant) => tenant.members, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'tenant_id' })
+  @ManyToOne(() => Tenant, (tenant) => tenant.members, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "tenant_id" })
   tenant: Tenant;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: "user_id" })
   userId: string;
 
-  @ManyToOne(() => User, (user) => user.tenantMemberships, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @ManyToOne(() => User, (user) => user.tenantMemberships, {
+    onDelete: "CASCADE",
+  })
+  @JoinColumn({ name: "user_id" })
   user: User;
 
-  @Column({ type: 'enum', enum: TenantMemberRole, default: TenantMemberRole.MEMBER })
+  @Column({
+    type: "enum",
+    enum: TenantMemberRole,
+    default: TenantMemberRole.MEMBER,
+  })
   role: TenantMemberRole;
 
-  @CreateDateColumn({ name: 'joined_at' })
+  @CreateDateColumn({ name: "joined_at" })
   joinedAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 }

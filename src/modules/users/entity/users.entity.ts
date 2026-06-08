@@ -7,20 +7,20 @@ import {
   UpdateDateColumn,
   Index,
   OneToMany,
-} from 'typeorm';
-import { uuidv7 } from 'uuidv7';
-import { Token } from '../../../core/accessControl/token/entity/tokens.entity';
-import { TenantMember } from '../../tenants/entities/tenant-member.entity';
+} from "typeorm";
+import { uuidv7 } from "uuidv7";
+import { Token } from "../../../core/accessControl/token/entity/tokens.entity";
+import { TenantMember } from "../../tenants/entities/tenant-member.entity";
 
 export enum UserRole {
-  USER = 'user',
-  PLATFORM_ADMIN = 'platform_admin',
+  USER = "user",
+  PLATFORM_ADMIN = "platform_admin",
 }
 
-@Entity('users')
-@Index(['email'], { unique: true })
+@Entity("users")
+@Index(["email"], { unique: true })
 export class User {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn("uuid")
   id: string;
 
   @BeforeInsert()
@@ -31,31 +31,31 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column({ name: 'full_name' })
+  @Column({ name: "full_name" })
   fullName: string;
 
-  @Column({ name: 'password_hash', select: false })
+  @Column({ name: "password_hash", select: false })
   passwordHash: string;
 
   @Column({ enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Column({ name: 'profile_image_url', nullable: true })
+  @Column({ name: "profile_image_url", nullable: true })
   profileImageUrl: string;
 
-  @Column({ name: 'is_verified', default: false })
+  @Column({ name: "is_verified", default: false })
   isVerified: boolean;
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: "is_active", default: true })
   isActive: boolean;
 
-  @Column({ name: 'last_login_at', type: 'timestamp', nullable: true })
+  @Column({ name: "last_login_at", type: "timestamp", nullable: true })
   lastLoginAt: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: "created_at" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
 
   @OneToMany(() => Token, (token) => token.user)

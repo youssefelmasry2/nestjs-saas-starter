@@ -7,28 +7,28 @@ import {
   IsUrl,
   IsBoolean,
   IsEnum,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../entity/users.entity';
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { UserRole } from "../entity/users.entity";
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'john@example.com' })
+  @ApiProperty({ example: "john@example.com" })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'John Doe' })
+  @ApiProperty({ example: "John Doe" })
   @IsString()
   @MinLength(3)
   @MaxLength(100)
   fullName: string;
 
-  @ApiProperty({ example: 'StrongPassword123!' })
+  @ApiProperty({ example: "StrongPassword123!" })
   @IsString()
   @MinLength(6)
   @MaxLength(100)
   password: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
+  @ApiPropertyOptional({ example: "https://example.com/avatar.jpg" })
   @IsOptional()
   @IsUrl()
   profileImageUrl?: string;
@@ -45,14 +45,14 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
-  @ApiPropertyOptional({ example: 'John Doe' })
+  @ApiPropertyOptional({ example: "John Doe" })
   @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(100)
   fullName?: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
+  @ApiPropertyOptional({ example: "https://example.com/avatar.jpg" })
   @IsOptional()
   @IsUrl()
   profileImageUrl?: string;

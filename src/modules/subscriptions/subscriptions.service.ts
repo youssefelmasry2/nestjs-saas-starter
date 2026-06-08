@@ -2,15 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import {
   Subscription,
   SubscriptionStatus,
-} from './entities/subscription.entity';
-import { PlansService } from '../plans/plans.service';
-import { ChangePlanDto } from './dto/subscriptions.dto';
+} from "./entities/subscription.entity";
+import { PlansService } from "../plans/plans.service";
+import { ChangePlanDto } from "./dto/subscriptions.dto";
 
 @Injectable()
 export class SubscriptionsService {
@@ -20,7 +20,7 @@ export class SubscriptionsService {
     private readonly plansService: PlansService,
   ) {}
 
-  async createForTenant(tenantId: string, planSlug = 'free') {
+  async createForTenant(tenantId: string, planSlug = "free") {
     const plan = await this.plansService.findBySlug(planSlug);
     if (!plan) {
       throw new NotFoundException(`Plan "${planSlug}" not found`);
@@ -47,15 +47,15 @@ export class SubscriptionsService {
         { tenantId, status: SubscriptionStatus.ACTIVE },
         { tenantId, status: SubscriptionStatus.TRIALING },
       ],
-      relations: ['plan'],
-      order: { createdAt: 'DESC' },
+      relations: ["plan"],
+      order: { createdAt: "DESC" },
     });
   }
 
   async getTenantSubscription(tenantId: string) {
     const subscription = await this.getActiveSubscription(tenantId);
     if (!subscription) {
-      throw new NotFoundException('No active subscription found');
+      throw new NotFoundException("No active subscription found");
     }
     return subscription;
   }
@@ -68,11 +68,11 @@ export class SubscriptionsService {
 
     const current = await this.getActiveSubscription(tenantId);
     if (!current) {
-      throw new NotFoundException('No active subscription found');
+      throw new NotFoundException("No active subscription found");
     }
 
     if (current.planId === plan.id) {
-      throw new BadRequestException('Tenant is already on this plan');
+      throw new BadRequestException("Tenant is already on this plan");
     }
 
     current.planId = plan.id;
@@ -90,7 +90,7 @@ export class SubscriptionsService {
   async cancelSubscription(tenantId: string) {
     const subscription = await this.getActiveSubscription(tenantId);
     if (!subscription) {
-      throw new NotFoundException('No active subscription found');
+      throw new NotFoundException("No active subscription found");
     }
 
     subscription.cancelAtPeriodEnd = true;

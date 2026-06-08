@@ -1,13 +1,13 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Plan } from './entities/plan.entity';
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Plan } from "./entities/plan.entity";
 
 const DEFAULT_PLANS: Partial<Plan>[] = [
   {
-    name: 'Free',
-    slug: 'free',
-    description: 'For individuals and small teams getting started',
+    name: "Free",
+    slug: "free",
+    description: "For individuals and small teams getting started",
     priceMonthly: 0,
     priceYearly: 0,
     sortOrder: 0,
@@ -19,9 +19,9 @@ const DEFAULT_PLANS: Partial<Plan>[] = [
     },
   },
   {
-    name: 'Pro',
-    slug: 'pro',
-    description: 'For growing teams that need more capacity',
+    name: "Pro",
+    slug: "pro",
+    description: "For growing teams that need more capacity",
     priceMonthly: 29,
     priceYearly: 290,
     sortOrder: 1,
@@ -33,9 +33,9 @@ const DEFAULT_PLANS: Partial<Plan>[] = [
     },
   },
   {
-    name: 'Enterprise',
-    slug: 'enterprise',
-    description: 'For large organizations with advanced needs',
+    name: "Enterprise",
+    slug: "enterprise",
+    description: "For large organizations with advanced needs",
     priceMonthly: 99,
     priceYearly: 990,
     sortOrder: 2,
@@ -69,7 +69,7 @@ export class PlansService implements OnModuleInit {
   findAll() {
     return this.planRepository.find({
       where: { isActive: true },
-      order: { sortOrder: 'ASC' },
+      order: { sortOrder: "ASC" },
     });
   }
 

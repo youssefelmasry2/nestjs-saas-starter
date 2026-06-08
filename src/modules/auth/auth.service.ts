@@ -2,11 +2,11 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
-} from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { TokenService } from '../../core/accessControl/token/token.service';
-import { TenantsService } from '../tenants/tenants.service';
-import { LoginDto, RegisterDto, SwitchTenantDto } from './dto/auth.dto';
+} from "@nestjs/common";
+import { UsersService } from "../users/users.service";
+import { TokenService } from "../../core/accessControl/token/token.service";
+import { TenantsService } from "../tenants/tenants.service";
+import { LoginDto, RegisterDto, SwitchTenantDto } from "./dto/auth.dto";
 
 @Injectable()
 export class AuthService {
@@ -28,7 +28,7 @@ export class AuthService {
         tenantId,
       );
       if (!membership) {
-        throw new ForbiddenException('You do not have access to this tenant');
+        throw new ForbiddenException("You do not have access to this tenant");
       }
       tenantRole = membership.role;
     }
@@ -58,7 +58,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(dto.email);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const isValid = await this.usersService.validatePassword(
@@ -67,18 +67,19 @@ export class AuthService {
     );
 
     if (!isValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     await this.usersService.updateLastLogin(user.id);
-    delete user.passwordHash;
+
+    const { passwordHash: _passwordHash, ...safeUser } = user;
 
     const tenants = await this.tenantsService.findUserTenants(user.id);
     const defaultTenantId = tenants[0]?.id;
 
     const tokens = await this.buildAuthResponse(user, defaultTenantId);
 
-    return { user, ...tokens };
+    return { user: safeUser, ...tokens };
   }
 
   async register(dto: RegisterDto) {
@@ -106,24 +107,32 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     const payload = await this.tokenService.validateRefreshToken(refreshToken);
+    if (!payload?.sessionId) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
     await this.tokenService.revokeSession(payload.sessionId);
     return { success: true };
   }
 
   async refreshToken(refreshToken: string) {
-    const newTokens = await this.tokenService.rotateRefreshToken(refreshToken);
-    if (!newTokens) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-    return newTokens;
+    return this.tokenService.rotateRefreshToken(refreshToken);
   }
 
   async getProfile(userId: string) {
     const user = await this.usersService.findOne(userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
     const tenants = await this.tenantsService.findUserTenants(userId);
-    return { ...user, tenants };
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      profileImageUrl: user.profileImageUrl,
+      isVerified: user.isVerified,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      tenants,
+    };
   }
 }

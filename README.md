@@ -16,10 +16,13 @@ Multi-tenant SaaS backend starter built with NestJS, TypeORM, and PostgreSQL. In
 ```bash
 pnpm install
 cp .env.example .env   # configure DATABASE_URL, JWT_SECRET, CLIENT_URL
+pnpm migration:run     # apply database migrations
 pnpm start:dev
 ```
 
-Swagger docs: [http://localhost:3000/docs](http://localhost:3000/docs)
+Swagger docs (development only): [http://localhost:3000/docs](http://localhost:3000/docs)
+
+Health check: [http://localhost:3000/health](http://localhost:3000/health)
 
 ## Architecture
 
@@ -79,10 +82,29 @@ export class Project extends TenantScopedEntity {
 ## Environment variables
 
 ```env
+NODE_ENV=development          # use "production" in prod (disables Swagger)
+RUN_MIGRATIONS=false          # set "true" in prod to auto-run migrations on boot
 DATABASE_URL=postgresql://...
 JWT_SECRET=your-secret
 CLIENT_URL=http://localhost:5173
 PORT=3000
+```
+
+## Production checklist
+
+- Set `NODE_ENV=production` in prod — disables Swagger
+- Set `RUN_MIGRATIONS=true` in prod — auto-runs pending migrations on boot (off by default locally)
+- Never enable TypeORM `synchronize` — use `pnpm migration:run` instead
+- Helmet security headers are applied globally
+- Graceful shutdown closes DB connections on `SIGTERM` / `SIGINT`
+- Monitor `/health` for liveness/readiness probes
+
+## Database migrations
+
+```bash
+pnpm migration:run      # apply pending migrations
+pnpm migration:revert   # revert last migration
+pnpm migration:generate src/database/migrations/MyMigration  # generate from entity changes
 ```
 
 ## Next steps

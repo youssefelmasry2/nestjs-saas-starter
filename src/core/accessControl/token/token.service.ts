@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Token } from './entity/tokens.entity';
-import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { InjectRepository } from "@nestjs/typeorm";
+import { randomUUID } from "crypto";
+import { Repository } from "typeorm";
+import * as bcrypt from "bcrypt";
+import type { JwtPayload } from "../types/jwt-payload.type";
+import { Token } from "./entity/tokens.entity";
 
 interface TokenUser {
   id: string;
@@ -30,9 +31,9 @@ export class TokenService {
         role: user.role,
         tenantId,
         tenantRole,
-        type: 'access',
+        type: "access",
       },
-      { expiresIn: '50m' },
+      { expiresIn: "50m" },
     );
   }
 
@@ -49,10 +50,10 @@ export class TokenService {
         role: user.role,
         tenantId,
         tenantRole,
-        type: 'refresh',
+        type: "refresh",
         sessionId,
       },
-      { expiresIn: '30d' },
+      { expiresIn: "30d" },
     );
 
     const hashed = await this.hashToken(refreshToken);
@@ -67,18 +68,18 @@ export class TokenService {
     return refreshToken;
   }
 
-  validateAccessToken(token: string) {
-    const payload = this.jwtService.verify(token);
-    if (payload.type !== 'access') {
-      throw new Error('Invalid token type');
+  validateAccessToken(token: string): JwtPayload {
+    const payload = this.jwtService.verify<JwtPayload>(token);
+    if (payload.type !== "access") {
+      throw new Error("Invalid token type");
     }
     return payload;
   }
 
-  async validateRefreshToken(token: string) {
-    const payload = this.jwtService.verify(token);
+  async validateRefreshToken(token: string): Promise<JwtPayload | null> {
+    const payload = this.jwtService.verify<JwtPayload>(token);
 
-    if (payload.type !== 'refresh') {
+    if (payload.type !== "refresh" || !payload.sessionId) {
       return null;
     }
 
@@ -86,12 +87,14 @@ export class TokenService {
       where: { sessionId: payload.sessionId },
     });
 
-    if (!session) return null;
-    if (session.revoked) return null;
-    if (session.expiresAt < new Date()) return null;
+    if (!session || session.revoked || session.expiresAt < new Date()) {
+      return null;
+    }
 
     const match = await bcrypt.compare(token, session.hashRefreshToken);
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
 
     return payload;
   }
@@ -101,20 +104,20 @@ export class TokenService {
     return bcrypt.hash(token, salt);
   }
 
-  async revokeSession(sessionId: string) {
+  async revokeSession(sessionId: string): Promise<void> {
     await this.tokenRepository.update({ sessionId }, { revoked: true });
   }
 
   async rotateRefreshToken(refreshToken: string) {
     const payload = await this.validateRefreshToken(refreshToken);
 
-    if (!payload) {
-      throw new UnauthorizedException('Invalid refresh token');
+    if (!payload?.sessionId) {
+      throw new UnauthorizedException("Invalid refresh token");
     }
 
     await this.revokeSession(payload.sessionId);
 
-    const user = {
+    const user: TokenUser = {
       id: payload.userId,
       role: payload.role,
     };

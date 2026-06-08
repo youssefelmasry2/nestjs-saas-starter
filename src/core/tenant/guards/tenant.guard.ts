@@ -4,15 +4,16 @@ import {
   ForbiddenException,
   Injectable,
   BadRequestException,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import {
   TENANT_AUTH_KEY,
   TENANT_ROLES_KEY,
-} from '../decorators/tenant.decorator';
-import { TenantMember } from '../../../modules/tenants/entities/tenant-member.entity';
+} from "../decorators/tenant.decorator";
+import { TenantMember } from "../../../modules/tenants/entities/tenant-member.entity";
+import type { AuthenticatedRequest } from "../../types/authenticated-request.type";
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -28,31 +29,29 @@ export class TenantGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiresTenant) return true;
-
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
-
-    if (!user?.userId) {
-      throw new ForbiddenException('Authentication required');
+    if (!requiresTenant) {
+      return true;
     }
 
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const user = request.user;
+
     const tenantId =
-      request.headers['x-tenant-id'] ?? user.tenantId;
+      (request.headers["x-tenant-id"] as string | undefined) ?? user.tenantId;
 
     if (!tenantId) {
       throw new BadRequestException(
-        'Tenant context required. Pass X-Tenant-Id header or switch tenant via auth/switch-tenant.',
+        "Tenant context required. Pass X-Tenant-Id header or switch tenant via auth/switch-tenant.",
       );
     }
 
     const membership = await this.tenantMemberRepository.findOne({
       where: { tenantId, userId: user.userId },
-      relations: ['tenant'],
+      relations: ["tenant"],
     });
 
-    if (!membership || !membership.tenant.isActive) {
-      throw new ForbiddenException('You do not have access to this tenant');
+    if (!membership?.tenant.isActive) {
+      throw new ForbiddenException("You do not have access to this tenant");
     }
 
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
@@ -60,10 +59,8 @@ export class TenantGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (requiredRoles?.length && !requiredRoles.includes(membership.role)) {
-      throw new ForbiddenException(
-        'You do not have the required tenant role',
-      );
+    if (requiredRoles.length > 0 && !requiredRoles.includes(membership.role)) {
+      throw new ForbiddenException("You do not have the required tenant role");
     }
 
     request.tenant = membership.tenant;
